@@ -2002,7 +2002,7 @@ void FillDataX(char* t, char C, bool doHex)
         d = t + strlen(t);  // bigendian can always be appended directly
     *d = C;
     d[1] = 0;
-    if (isprint(C) == 0)
+    if (isprint((unsigned char)C) == 0)
         *d = '.';
 
     if (doHex != FALSE)
@@ -2050,7 +2050,7 @@ void ShowData()
     StartListUpdate(DUMP_WND);
 
     x = DataDump;       // data dumps are ALWAYS 4K
-    for(i = 0; i < 4096; i += 16)
+    for(i = 0; i < 0x100; i += 16)
     {
         if (In64Mode == FALSE)
             sprintf(cols[0],"0x%08X",(Bit32u) (DumpStart + i));
@@ -2349,6 +2349,25 @@ bool InitDataDump(bool isLinear, Bit64u newDS)
     LinearDump = isLinear;  // finalize dump mode, since it worked
     ShowMemData(TRUE);      // Display DataDump using these new parameters/data
     return TRUE;
+}
+
+void ScrollDataWin(int delta)
+{
+	switch (DViewMode)
+	{
+	case VIEW_MEMDUMP:
+		if (DumpInitted != FALSE)
+		{
+			DumpStart += 0x10 * delta;
+			InitDataDump(LinearDump, DumpStart);
+			ShowData();
+		}
+		else
+			EndListUpdate(2);   // list is empty, so end (show) it!
+		break;
+
+	}
+
 }
 
 // User is changing which registers are displaying in the Register list

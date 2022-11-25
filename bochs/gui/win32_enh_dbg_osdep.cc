@@ -87,6 +87,7 @@ void ShowData();
 void UpdateStatus();
 void doUpdate();
 void RefreshDataWin();
+void ScrollDataWin(int delta);
 void OnBreak();
 void ParseBkpt();
 void SetBreak(int i);
@@ -280,8 +281,26 @@ LRESULT CALLBACK LVProc(HWND hh, UINT mm, WPARAM ww, LPARAM ll)
             }
     }
 
+	if (mm == WM_NOTIFY)
+	{
+		LPNMHDR nmh = (LPNMHDR)ll;
+		if (nmh->code == LVN_BEGINSCROLL)
+		{
+			//MessageBoxA(hh, "LVN_BEGINSCROLL", "Info1", MB_OK);
+		}
+	}
+
     switch (mm)
     {
+		case WM_MOUSEWHEEL: {
+			short zDelta = GET_WHEEL_DELTA_WPARAM(ww);
+			ScrollDataWin(-zDelta / 30);
+			char str[128];
+			sprintf(str, "%d", zDelta);
+			//MessageBoxA(hh, str, "MOUSEWHEEL", MB_OK);
+			return 0;
+		}
+
         case WM_CHAR:
             // throw away all Enter keys (or use them for something)
             if (ww != VK_RETURN && *wEdit != NULL)
@@ -1260,6 +1279,16 @@ LRESULT CALLBACK B_WP(HWND hh,UINT mm,WPARAM ww,LPARAM ll)
 {
     unsigned i;
     extern bool vgaw_refresh;
+
+	if (mm == WM_NOTIFY)
+	{
+		LPNMHDR nmh = (LPNMHDR)ll;
+		if (nmh->code == LVN_BEGINSCROLL)
+		{
+			//MessageBoxA(hh, "LVN_BEGINSCROLL", "Info2", MB_OK);
+		}
+
+	}
 
     switch(mm)
     {
