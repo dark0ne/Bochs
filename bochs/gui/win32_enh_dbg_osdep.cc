@@ -292,6 +292,7 @@ LRESULT CALLBACK LVProc(HWND hh, UINT mm, WPARAM ww, LPARAM ll)
 
     switch (mm)
     {
+		/*
 		case WM_MOUSEWHEEL: {
 			short zDelta = GET_WHEEL_DELTA_WPARAM(ww);
 			ScrollDataWin(-zDelta / 30);
@@ -300,6 +301,7 @@ LRESULT CALLBACK LVProc(HWND hh, UINT mm, WPARAM ww, LPARAM ll)
 			//MessageBoxA(hh, str, "MOUSEWHEEL", MB_OK);
 			return 0;
 		}
+		*/
 
         case WM_CHAR:
             // throw away all Enter keys (or use them for something)
@@ -1143,9 +1145,21 @@ void StartListUpdate(int listnum)
 
 void EndListUpdate(int listnum)
 {
+	if (listnum == DUMP_WND) {
+
+		char* txt = "Dummy";
+		char* cols[1] = { txt };
+		InsertListRow(cols, 1, DUMP_WND, 0, 8);
+	}
+
     UpdInProgress[listnum] = FALSE;     // It's OK to paint the listview now
     Invalidate(listnum);                // -- but the window needs one last paint message
     ShowWindow(hL[listnum],SW_SHOW);
+
+	if (listnum == DUMP_WND) {
+		int nr = ListView_GetCountPerPage(hL[listnum]);
+		ListView_EnsureVisible(hL[listnum], nr, FALSE);
+	}
 }
 
 void DispMessage(const char *msg, const char *title)
@@ -1285,6 +1299,16 @@ LRESULT CALLBACK B_WP(HWND hh,UINT mm,WPARAM ww,LPARAM ll)
 		LPNMHDR nmh = (LPNMHDR)ll;
 		if (nmh->code == LVN_BEGINSCROLL)
 		{
+			LPNMLVSCROLL pnmLVScroll = (LPNMLVSCROLL)ll;
+			if (pnmLVScroll->hdr.hwndFrom == hL[DUMP_WND]) {
+				char msg[128];
+
+				sprintf(msg, "LVN_BEGINSCROLL, dx=%d, dy=%d", pnmLVScroll->dx, pnmLVScroll->dy);
+				SetWindowText(hh, msg);
+
+				ScrollDataWin(pnmLVScroll->dy);
+			}
+
 			//MessageBoxA(hh, "LVN_BEGINSCROLL", "Info2", MB_OK);
 		}
 

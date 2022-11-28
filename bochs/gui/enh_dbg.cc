@@ -2050,7 +2050,7 @@ void ShowData()
     StartListUpdate(DUMP_WND);
 
     x = DataDump;       // data dumps are ALWAYS 4K
-    for(i = 0; i < 0x100; i += 16)
+    for(i = 0; i < 0x1000; i += 16)
     {
         if (In64Mode == FALSE)
             sprintf(cols[0],"0x%08X",(Bit32u) (DumpStart + i));
