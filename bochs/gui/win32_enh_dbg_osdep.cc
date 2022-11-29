@@ -100,6 +100,8 @@ void MakeBL(HTREEITEM *h_P, bx_param_c *p);
 static unsigned LstTop = 0;
 static Bit32u CurTimeStamp = 0;    // last mousedown time
 
+constexpr size_t kNrOfDummyEntries = 5;
+
 // Handles to Windows and global stuff
 HWND hY = NULL;     // complete parent window
 HWND hL[3];         // 0=registers, 1=Asm, 2=MemDump
@@ -680,16 +682,18 @@ void InsertListRow(char *ColumnText[], int ColumnCount, int listnum, int LineCou
 //#endif
 
     // insert data for the first column
-    CallWindowProc(wListView,hL[listnum],LVM_INSERTITEM,(WPARAM) 0,(LPARAM) &lvi);
+	ListView_InsertItem(hL[listnum], &lvi);
+    //CallWindowProc(wListView,hL[listnum],LVM_INSERTITEM,(WPARAM) 0,(LPARAM) &lvi);
 
     // loop over, and insert data for all additional columns
-    lvi.mask = LVIF_TEXT;
+    //lvi.mask = LVIF_TEXT;
     int i = 0;
     while (++i < ColumnCount)
     {
-        lvi.iSubItem = i;
-        lvi.pszText = ColumnText[i];
-        CallWindowProc(wListView,hL[listnum],LVM_SETITEMTEXT,(WPARAM) LineCount,(LPARAM) &lvi);
+        //lvi.iSubItem = i;
+        //lvi.pszText = ColumnText[i];
+		ListView_SetItemText(hL[listnum], LineCount, i, ColumnText[i]);
+        //CallWindowProc(wListView,hL[listnum],LVM_SETITEMTEXT,(WPARAM) LineCount,(LPARAM) &lvi);
     }
 }
 
@@ -865,6 +869,8 @@ void RedrawColumns(int listnum)
         if (AsmPgSize != 0)
             ListLineRatio = ListVerticalPix / AsmPgSize;
         CallWindowProc(wListView, hL[ASM_WND], LVM_SETCOLUMNWIDTH, 0, LVSCW_AUTOSIZE);
+		CallWindowProc(wListView, hL[ASM_WND], LVM_SETCOLUMNWIDTH, 1, LVSCW_AUTOSIZE);
+		CallWindowProc(wListView, hL[ASM_WND], LVM_SETCOLUMNWIDTH, 2, LVSCW_AUTOSIZE);
     }
     else
     {
@@ -1149,7 +1155,10 @@ void EndListUpdate(int listnum)
 
 		char* txt = "Dummy";
 		char* cols[1] = { txt };
-		InsertListRow(cols, 1, DUMP_WND, 0, 8);
+		for (int i = 0; i < kNrOfDummyEntries; ++i) {
+			InsertListRow(cols, 1, DUMP_WND, 0, 8);
+		}
+		
 	}
 
     UpdInProgress[listnum] = FALSE;     // It's OK to paint the listview now
@@ -1158,7 +1167,7 @@ void EndListUpdate(int listnum)
 
 	if (listnum == DUMP_WND) {
 		int nr = ListView_GetCountPerPage(hL[listnum]);
-		ListView_EnsureVisible(hL[listnum], nr, FALSE);
+		ListView_EnsureVisible(hL[listnum], nr+kNrOfDummyEntries-1, FALSE);
 	}
 }
 
@@ -1297,19 +1306,27 @@ LRESULT CALLBACK B_WP(HWND hh,UINT mm,WPARAM ww,LPARAM ll)
 	if (mm == WM_NOTIFY)
 	{
 		LPNMHDR nmh = (LPNMHDR)ll;
-		if (nmh->code == LVN_BEGINSCROLL)
+		if (nmh->code == LVN_ENDSCROLL)
 		{
 			LPNMLVSCROLL pnmLVScroll = (LPNMLVSCROLL)ll;
 			if (pnmLVScroll->hdr.hwndFrom == hL[DUMP_WND]) {
-				char msg[128];
+				int idx = ListView_GetTopIndex(hL[DUMP_WND]);
 
-				sprintf(msg, "LVN_BEGINSCROLL, dx=%d, dy=%d", pnmLVScroll->dx, pnmLVScroll->dy);
+				char msg[128];
+				sprintf(msg, "LVN_ENDSCROLL, idx = %d", idx);
 				SetWindowText(hh, msg);
 
-				ScrollDataWin(pnmLVScroll->dy);
+				if (idx < kNrOfDummyEntries) {
+					ScrollDataWin(pnmLVScroll->dy);
+					return 0;
+				}
+
+
+				
+
+				//MessageBoxA(hh, "LVN_BEGINSCROLL", "Info2", MB_OK);
 			}
 
-			//MessageBoxA(hh, "LVN_BEGINSCROLL", "Info2", MB_OK);
 		}
 
 	}
